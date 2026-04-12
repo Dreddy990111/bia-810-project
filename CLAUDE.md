@@ -1,0 +1,115 @@
+# Atelier — Vendor Intelligence Platform
+## BIA 810 Course Project
+
+A vendor intelligence dashboard with login/session auth and an AI chat engine backed by Anthropic's API. Deployed to Cloudflare Workers (Python) with static assets.
+
+---
+
+## Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Cloudflare Workers (Python via pyodide) |
+| Frontend | Vanilla HTML/CSS/JS (single-page dashboard) |
+| AI | Anthropic Claude (`claude-sonnet-4-20250514`) via Worker proxy |
+| Auth | HMAC-signed session cookies |
+| Local dev | Flask (app.py) + `wrangler dev` |
+
+---
+
+## Project Structure
+
+```
+BIA 810 project/
+├── worker.py               # Cloudflare Worker — routes, auth, Anthropic proxy
+├── wrangler.toml            # Wrangler deployment config
+├── public/
+│   ├── login.html           # Login page (static, JS error handling)
+│   └── dashboard.html       # Main vendor intelligence dashboard
+├── app.py                   # Flask server (local dev / legacy)
+├── .env                     # API key (never commit)
+├── .gitignore
+├── requirements.txt
+├── templates/               # Flask templates (legacy, kept for local dev)
+│   ├── login.html
+│   └── dashboard.html
+└── vendoriq_elegant-4.html  # Original standalone HTML (source of truth for UI)
+```
+
+---
+
+## Deployment (Cloudflare Workers)
+
+**Live URL:** https://atelier.atelier-iq.workers.dev
+
+**Deploy:**
+```bash
+cd "/Users/dreddy/Desktop/BIA 810 project"
+npx wrangler deploy
+```
+
+**Local dev:**
+```bash
+npx wrangler dev --port 8787
+```
+
+**Secrets** (already set via `wrangler secret put`):
+- `ANTHROPIC_API_KEY` — Anthropic API key
+- `SECRET_KEY` — HMAC signing key for session cookies
+
+**Account:**
+- Cloudflare email: Dhanvanth0111@gmail.com
+- Workers subdomain: `atelier-iq.workers.dev`
+- Cloudflare Account ID: `4e0bedd2b206fd2123e1b057002baa70`
+
+---
+
+## Running Locally (Flask)
+
+```bash
+cd "/Users/dreddy/Desktop/BIA 810 project"
+python3 app.py
+# Opens at http://127.0.0.1:5000
+```
+
+---
+
+## Routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Redirects to `/login` or `/dashboard` |
+| `/login` | Login form (GET + POST) |
+| `/dashboard` | Protected dashboard (requires session) |
+| `/logout` | Clears session, redirects to login |
+| `/api/chat` | Anthropic proxy — requires session, POST only |
+
+---
+
+## Auth
+
+- Sessions via HMAC-signed cookies (worker.py) or Flask `session` (app.py)
+- Users defined in `USERS` dict — no database
+- Default: `admin` / `password123`, `demo` / `demo123`
+
+## API Key
+
+- Stored in `.env` locally, as a Cloudflare secret in production
+- Never sent to the browser — all Anthropic calls go through `/api/chat`
+
+---
+
+## Render (legacy, may still be running)
+
+- Service: `atelier` at https://atelier-9wo0.onrender.com
+- Dashboard: https://dashboard.render.com/web/srv-d7dssk58nd3s73b6qgu0
+
+---
+
+## MCP Server
+
+Filesystem MCP configured at:
+`~/Library/Application Support/Claude/claude_desktop_config.json`
+
+Grants Claude Desktop access to: Desktop, Downloads, Documents.
+Restart Claude Desktop to activate.

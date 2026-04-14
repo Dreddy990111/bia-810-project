@@ -702,6 +702,12 @@ function render(){
   updateHeader();
 }
 
+const TYPE_GUESTS={Catering:75,Venue:150,AV:100,Decor:100,Entertainment:100};
+function perPerson(v){
+  const guests=TYPE_GUESTS[v.vendor_type]||100;
+  return Math.round(v.price_range/guests);
+}
+
 function cardHTML(v,i){
   const cfg=TYPE_CFG[v.vendor_type]||{bg:'rgba(100,100,100,0.15)',c:'#aaa',init:'??'};
   const lit=litIds.has(v.vendor_id)?'lit':'';
@@ -718,7 +724,7 @@ function cardHTML(v,i){
     </div>
     <div class="divider"></div>
     <div class="metrics">
-      <div class="metric"><div class="metric-val">$${v.price_range.toLocaleString()}</div><div class="metric-lab">Price</div></div>
+      <div class="metric"><div class="metric-val">$${perPerson(v)}<span style="font-size:10px;font-weight:400;color:var(--mist3)">/pp</span></div><div class="metric-lab">Per Person</div></div>
       <div class="metric"><div class="metric-val">${v.rating}/5</div><div class="metric-lab">Rating</div></div>
       <div class="metric"><div class="metric-val">${v.experience_years}yr</div><div class="metric-lab">Exp.</div></div>
       <div class="metric"><div class="metric-val">${Math.round(v.reliability_score*100)}%</div><div class="metric-lab">Reliability</div></div>
@@ -736,7 +742,7 @@ function rowHTML(v,i){
   return `<div class="vrow ${lit}" data-vid="${v.vendor_id}" style="animation-delay:${Math.min(i*0.02,0.5)}s;">
     <div class="type-gem" style="background:${cfg.bg};color:${cfg.c};width:30px;height:30px;font-size:9px;border-radius:6px;">${cfg.init}</div>
     <div><div class="vrow-name">${v.vendor_name}</div><div class="vrow-sub">${v.location_city}</div></div>
-    <div class="vrow-val">$${v.price_range.toLocaleString()}</div>
+    <div class="vrow-val">$${perPerson(v)}<span style="font-size:9px;color:var(--mist3)">/pp</span></div>
     <div class="vrow-val">${v.rating}</div>
     <div class="vrow-val">${v.experience_years} yr</div>
     <div class="vrow-val">${Math.round(v.reliability_score*100)}%</div>
@@ -808,7 +814,7 @@ function openModal(id){
       <span class="tag tag-gold">Score ${s}/100</span>
     </div>
     <div class="detail-grid">
-      <div class="detail-cell"><div class="detail-val">$${v.price_range.toLocaleString()}</div><div class="detail-lab">Price range</div></div>
+      <div class="detail-cell"><div class="detail-val">$${perPerson(v)}<span style="font-size:13px;color:var(--mist3)">/pp</span></div><div class="detail-lab">Per person · $${v.price_range.toLocaleString()} est. total</div></div>
       <div class="detail-cell"><div class="detail-val">${v.rating} <span style="font-size:13px;color:var(--mist3)">/ 5</span></div><div class="detail-lab">Rating · ${v.review_count} reviews</div></div>
       <div class="detail-cell"><div class="detail-val">${v.experience_years}</div><div class="detail-lab">Years experience</div></div>
       <div class="detail-cell"><div class="detail-val">${Math.round(v.reliability_score*100)}%</div><div class="detail-lab">Reliability score</div></div>

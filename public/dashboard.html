@@ -287,6 +287,36 @@ main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
   padding:16px 18px;border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:12px;flex-shrink:0;
 }
+/* API KEY SECTION */
+.apikey-section{
+  padding:10px 14px;border-bottom:1px solid var(--line);
+  flex-shrink:0;background:rgba(0,0,0,0.15);
+}
+.apikey-label{
+  font-size:9px;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--mist3);margin-bottom:6px;display:flex;align-items:center;gap:6px;
+}
+.apikey-label svg{flex-shrink:0;}
+.apikey-row{display:flex;gap:6px;align-items:center;}
+.apikey-input{
+  flex:1;background:var(--ink2);border:1px solid var(--line);
+  border-radius:5px;padding:6px 10px;
+  font-family:'DM Sans',sans-serif;font-size:11px;color:var(--paper2);
+  outline:none;transition:border-color 0.18s;letter-spacing:0.04em;
+}
+.apikey-input::placeholder{color:var(--mist3);}
+.apikey-input:focus{border-color:var(--gold);}
+.apikey-save{
+  background:rgba(184,145,58,0.15);border:1px solid var(--line2);
+  color:var(--gold);border-radius:5px;padding:6px 10px;
+  font-size:10px;letter-spacing:0.08em;font-family:'DM Sans',sans-serif;
+  transition:all 0.18s;white-space:nowrap;
+}
+.apikey-save:hover{background:rgba(184,145,58,0.28);border-color:var(--gold);}
+.apikey-status{
+  font-size:9px;margin-top:5px;letter-spacing:0.06em;
+  transition:opacity 0.3s;
+}
 .chat-avatar{
   width:30px;height:30px;border-radius:50%;
   background:rgba(184,145,58,0.12);border:1px solid var(--line2);
@@ -559,6 +589,19 @@ main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
         <div class="chat-sub" style="letter-spacing:0.08em;">AI matching engine</div>
       </div>
       <div class="pulse"></div>
+    </div>
+
+    <!-- API KEY SECTION -->
+    <div class="apikey-section">
+      <div class="apikey-label">
+        <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M8.5 1a2.5 2.5 0 100 5 2.5 2.5 0 000-5zM7 3.5a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM5.5 5.5L1 10v1h2v-1h1V9h1L6.5 7.5A4 4 0 005.5 5.5z" fill="var(--gold)"/></svg>
+        Anthropic API Key
+      </div>
+      <div class="apikey-row">
+        <input class="apikey-input" id="apikey-input" type="password" placeholder="sk-…" autocomplete="off"/>
+        <button class="apikey-save" onclick="saveApiKey()">Save</button>
+      </div>
+      <div class="apikey-status" id="apikey-status"></div>
     </div>
 
     <div class="chat-msgs" id="chat-msgs"></div>
@@ -890,15 +933,43 @@ function parseReply(raw){
   return html;
 }
 
+function saveApiKey(){
+  const val=document.getElementById('apikey-input').value.trim();
+  const st=document.getElementById('apikey-status');
+  if(!val){st.style.color='#e08080';st.textContent='Please enter a key.';return;}
+  localStorage.setItem('ant_key',val);
+  st.style.color='#4aa360';st.textContent='✓ Key saved';
+  setTimeout(()=>{st.textContent='';},2500);
+}
+
+function getApiKey(){
+  return localStorage.getItem('ant_key')||'';
+}
+
+// Load saved key on page load
+window.addEventListener('DOMContentLoaded',()=>{
+  const saved=localStorage.getItem('ant_key');
+  if(saved){
+    document.getElementById('apikey-input').value=saved;
+    document.getElementById('apikey-status').style.color='#4aa360';
+    document.getElementById('apikey-status').textContent='✓ Key loaded';
+    setTimeout(()=>{document.getElementById('apikey-status').textContent='';},2000);
+  }
+});
+
 async function callAPI(messages, systemPrompt){
-  const allMessages=[{role:'system',content:systemPrompt},...messages];
+  const apiKey=getApiKey();
+  const headers={'Content-Type':'application/json'};
+  if(apiKey) headers['x-anthropic-key']=apiKey;
   const r=await fetch('/api/chat',{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers,
     body:JSON.stringify({
-      model:'gpt-4o-search-preview',
-      max_completion_tokens:1024,
-      messages:allMessages
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1024,
+      system:systemPrompt,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages
     })
   });
   const d=await r.json();
@@ -939,15 +1010,56 @@ async function doSend(){
   const systemPrompt=buildSystem(t);
 
   try{
-    const d=await callAPI([...chatHistory], systemPrompt);
+    let messages=[...chatHistory];
+    let finalText='';
+    let iterations=0;
+
+    while(iterations<6){
+      iterations++;
+      const d=await callAPI(messages, systemPrompt);
+      const stopReason=d.stop_reason;
+      const content=d.content||[];
+
+      const textParts=content.filter(b=>b.type==='text').map(b=>b.text);
+      if(textParts.length) finalText+=textParts.join('');
+
+      const toolUses=content.filter(b=>b.type==='tool_use');
+
+      if(!toolUses.length || stopReason==='end_turn'){
+        chatHistory.push({role:'assistant',content:content});
+        break;
+      }
+
+      messages.push({role:'assistant',content:content});
+      const toolResults=[];
+
+      for(const tu of toolUses){
+        if(tu.name==='web_search'){
+          const query=tu.input?.query||'';
+          rmTyping();
+          showSearchIndicator(query);
+          toolResults.push({type:'tool_result',tool_use_id:tu.id,content:'Search completed.'});
+        }
+      }
+
+      messages.push({role:'user',content:toolResults});
+      rmSearchIndicator();
+      showTyping();
+    }
+
     rmTyping();
     rmSearchIndicator();
 
-    const choice=d.choices&&d.choices[0];
-    const finalText=(choice?.message?.content)||'No response received.';
-    chatHistory.push({role:'assistant',content:finalText});
+    const lastAssistant=messages.filter(m=>m.role==='assistant').pop();
+    if(lastAssistant){
+      const lastContent=Array.isArray(lastAssistant.content)?lastAssistant.content:[];
+      finalText=lastContent.filter(b=>b.type==='text').map(b=>b.text).join('')||finalText;
+    }
+
+    chatHistory=[...messages];
     if(chatHistory.length>12) chatHistory=chatHistory.slice(-12);
 
+    if(!finalText) finalText='I completed the search. Please ask a follow-up question.';
     addBot(parseReply(finalText));
     document.querySelectorAll('.chat-vcard[data-vid]').forEach(el=>el.addEventListener('click',()=>openModal(el.dataset.vid)));
 

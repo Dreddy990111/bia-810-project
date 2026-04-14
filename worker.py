@@ -75,21 +75,22 @@ async def handle_login_post(request, env, secret):
 
 async def handle_chat(request, env):
     body_text = await request.text()
-    api_key = getattr(env, "OPENAI_API_KEY", "")
+    api_key = request.headers.get("x-anthropic-key") or getattr(env, "ANTHROPIC_API_KEY", "")
 
     init = to_js(
         {
             "method": "POST",
             "headers": {
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
             },
             "body": body_text,
         },
         dict_converter=Object.fromEntries,
     )
 
-    resp = await fetch("https://api.openai.com/v1/chat/completions", init)
+    resp = await fetch("https://api.anthropic.com/v1/messages", init)
     resp_text = await resp.text()
 
     h = Headers.new()

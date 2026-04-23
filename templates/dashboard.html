@@ -1271,9 +1271,17 @@ function collectInqData(){
 }
 
 function showDraft(subject, body){
-  inqCurrentDraft={subject,body};
-  document.getElementById('inq-draft-subject').textContent=subject;
-  document.getElementById('inq-draft-body-display').textContent=body;
+  inqCurrentDraft={subject:subject||'',body:body||''};
+  document.getElementById('inq-draft-subject').textContent=subject||'';
+  const el=document.getElementById('inq-draft-body-display');
+  if(body&&body.trim()){
+    el.innerHTML=(body)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\n\n/g,'</p><p style="margin-top:10px;">').replace(/\n/g,'<br>');
+    el.innerHTML='<p>'+el.innerHTML+'</p>';
+  }else{
+    el.innerHTML='<em style="color:var(--mist3);font-size:11px;">Body not received — go back and try again.</em>';
+  }
 }
 
 async function callDraftAPI(payload, btn){

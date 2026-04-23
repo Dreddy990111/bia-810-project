@@ -181,15 +181,36 @@ Return ONLY a JSON object — no markdown, no code fences:
 
         resp = await fetch("https://api.anthropic.com/v1/messages", init)
         data = json.loads(await resp.text())
-        text = (data.get("content") or [{}])[0].get("text", "")
+        raw = (data.get("content") or [{}])[0].get("text", "")
 
-        m = re.search(r'\{[\s\S]*\}', text)
-        if m:
-            result = json.loads(m.group())
-        else:
-            result = {"subject": f"Inquiry — {vname}", "body": text}
+        # Strip markdown code fences Claude sometimes adds
+        clean = re.sub(r'^```(?:json)?\s*', '', raw.strip())
+        clean = re.sub(r'\s*```$', '', clean).strip()
 
-        return json_resp(result)
+        result = None
+        # Try direct parse first
+        try:
+            result = json.loads(clean)
+        except Exception:
+            pass
+
+        # Fallback: find the outermost {...} block
+        if not result:
+            m = re.search(r'\{[\s\S]*\}', clean)
+            if m:
+                try:
+                    result = json.loads(m.group())
+                except Exception:
+                    pass
+
+        # Ensure result has non-empty subject and body
+        if not isinstance(result, dict) or not (result.get("body") or "").strip():
+            result = {
+                "subject": result.get("subject", f"Booking Inquiry — {vname}") if isinstance(result, dict) else f"Booking Inquiry — {vname}",
+                "body": raw,
+            }
+
+        return json_resp({"subject": result.get("subject", f"Booking Inquiry — {vname}"), "body": result.get("body", raw)})
     except Exception as e:
         return json_resp({"error": str(e)}, 500)
 

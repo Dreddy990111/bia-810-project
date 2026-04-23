@@ -113,18 +113,36 @@ async def handle_draft_email(request, env):
         price = vendor.get("price_range", "")
         resp_h = vendor.get("response_time_hours", 24)
 
-        extra = {k: v for k, v in ud.items() if k not in ("name", "email", "date", "budget") and v}
-        extra_lines = "\n".join(f"- {k}: {v}" for k, v in extra.items())
+        change_request = body.get("change_request", "")
+        current_draft = body.get("current_draft", {})
 
-        type_context = {
-            "Catering": "catering services (menu, dietary options, service style, staffing)",
-            "Venue": "venue hire (capacity, layout options, included amenities, availability)",
-            "AV": "audio-visual services (equipment packages, setup requirements, on-site technician)",
-            "Decor": "decor and styling services (themes, floral, draping, setup/teardown)",
-            "Entertainment": "entertainment services (performance packages, technical rider, setlist flexibility)",
-        }.get(vtype, "services (pricing, packages, availability)")
+        if change_request and current_draft:
+            prompt = f"""Revise this vendor inquiry email based on the requested changes.
 
-        prompt = f"""You are drafting a professional vendor inquiry email on behalf of an event planner.
+Current draft:
+Subject: {current_draft.get('subject', '')}
+
+{current_draft.get('body', '')}
+
+Changes requested: {change_request}
+
+Apply the requested changes while keeping the email professional and appropriate for a {vtype} inquiry addressed to {contact} at {vname}. Keep it ~150–200 words.
+
+Respond ONLY with a JSON object (no markdown, no code fences):
+{{"subject": "...", "body": "..."}}"""
+        else:
+            extra = {k: v for k, v in ud.items() if k not in ("name", "email", "date", "budget") and v}
+            extra_lines = "\n".join(f"- {k}: {v}" for k, v in extra.items())
+
+            type_context = {
+                "Catering": "catering services (menu, dietary options, service style, staffing)",
+                "Venue": "venue hire (capacity, layout options, included amenities, availability)",
+                "AV": "audio-visual services (equipment packages, setup requirements, on-site technician)",
+                "Decor": "decor and styling services (themes, floral, draping, setup/teardown)",
+                "Entertainment": "entertainment services (performance packages, technical rider, setlist flexibility)",
+            }.get(vtype, "services (pricing, packages, availability)")
+
+            prompt = f"""You are drafting a professional vendor inquiry email on behalf of an event planner.
 
 Sender: {ud.get('name','[Name]')} <{ud.get('email','')}>
 Recipient: {contact} at {vname} ({vtype}, {city})

@@ -661,8 +661,8 @@ main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
       <span class="qchip" onclick="qsend(this.textContent)">Corporate dinner $10K</span>
       <span class="qchip" onclick="qsend(this.textContent)">Wedding venue NYC</span>
       <span class="qchip" onclick="qsend(this.textContent)">Best AV vendors</span>
-      <span class="qchip" onclick="qsend(this.textContent)">Find caterers in Miami online</span>
-      <span class="qchip" onclick="qsend(this.textContent)">Search for wedding florists in LA</span>
+      <span class="qchip" onclick="qsend(this.textContent)">Find caterers in Brooklyn</span>
+      <span class="qchip" onclick="qsend(this.textContent)">Search for AV vendors in Manhattan</span>
       <span class="qchip" onclick="qsend(this.textContent)">Top 3 caterers</span>
     </div>
 
@@ -1313,29 +1313,16 @@ async function submitInquiryForm(){
   }catch(e){alert('Could not draft email: '+e.message);}
 }
 
-async function sendInquiryEmail(){
+function sendInquiryEmail(){
   if(!inqCurrentDraft?.body?.trim()){alert('Email body is empty — please go back and regenerate the draft.');return;}
-  const btn=document.getElementById('inq-send-btn');
-  btn.disabled=true;btn.innerHTML='<span class="inq-spinner"></span>Sending…';
-  try{
-    const r=await fetch('/api/send-email',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        to:inqVendor.contact_email,
-        from_name:inqUserData?.name||'Atelier User',
-        from_email:inqUserData?.email||'',
-        subject:inqCurrentDraft?.subject||'',
-        body:inqCurrentDraft?.body||'',
-      }),
-    });
-    const d=await r.json();
-    if(!r.ok)throw new Error(d.error||'Send failed');
-    document.getElementById('inq-success-msg').innerHTML=
-      `Sent to <strong style="color:var(--gold-light)">${inqVendor.contact_email}</strong>.<br>You should receive it in your inbox now. Expect a reply within ${inqVendor.response_time_hours} hours.`;
-    gotoInqStep(3);
-  }catch(e){alert('Could not send email: '+e.message);}
-  finally{btn.disabled=false;btn.innerHTML='<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l7 5 7-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Confirm &amp; Send';}
+  const subject=inqCurrentDraft?.subject||'';
+  const body=inqCurrentDraft?.body||'';
+  const to=inqVendor.contact_email;
+  const mailtoLink=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.open(mailtoLink,'_blank');
+  document.getElementById('inq-success-msg').innerHTML=
+    `Your email client has opened addressed to <strong style="color:var(--gold-light)">${to}</strong>.<br>Review and hit send — expect a reply within ${inqVendor.response_time_hours} hours.`;
+  gotoInqStep(3);
 }
 
 /* ─── CHAT ─── */

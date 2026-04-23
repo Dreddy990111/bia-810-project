@@ -22,18 +22,18 @@ A vendor intelligence dashboard with login/session auth and an AI chat engine ba
 ```
 BIA 810 project/
 ├── worker.py               # Cloudflare Worker — routes, auth, Anthropic proxy
-├── wrangler.toml            # Wrangler deployment config
+├── wrangler.toml           # Wrangler deployment config
 ├── public/
-│   ├── login.html           # Login page (static, JS error handling)
-│   └── dashboard.html       # Main vendor intelligence dashboard
-├── app.py                   # Flask server (local dev / legacy)
-├── .env                     # API key (never commit)
+│   ├── login.html          # Login page (static, JS error handling)
+│   └── dashboard.html      # Main vendor intelligence dashboard
+├── app.py                  # Flask server (local dev / legacy)
+├── .env                    # API key (never commit)
 ├── .gitignore
 ├── requirements.txt
-├── templates/               # Flask templates (legacy, kept for local dev)
+├── templates/              # Flask templates (legacy, kept for local dev)
 │   ├── login.html
 │   └── dashboard.html
-└── vendoriq_elegant-4.html  # Original standalone HTML (source of truth for UI)
+└── vendoriq_elegant-4.html # Original standalone HTML (source of truth for UI)
 ```
 
 ---
@@ -53,8 +53,8 @@ npx wrangler deploy
 npx wrangler dev --port 8787
 ```
 
-**Secrets** (already set via `wrangler secret put`):
-- `ANTHROPIC_API_KEY` — Anthropic API key
+**Secrets** (set via `wrangler secret put`):
+- `ANTHROPIC_API_KEY` — Anthropic API key (primary AI provider)
 - `SECRET_KEY` — HMAC signing key for session cookies
 
 **Account:**
@@ -64,13 +64,17 @@ npx wrangler dev --port 8787
 
 ---
 
-## Running Locally (Flask)
+## Auth
 
-```bash
-cd "/Users/dreddy/Desktop/BIA 810 project"
-python3 app.py
-# Opens at http://127.0.0.1:5000
-```
+- Sessions via HMAC-signed cookies (worker.py)
+- Users defined in `USERS` dict — no database
+- Current credentials: `Best Prof. Ever` / `Mr Nikouei`
+
+## API Key
+
+- `ANTHROPIC_API_KEY` stored as Cloudflare secret in production
+- Users can also paste their own Anthropic key in the dashboard UI (stored in localStorage, sent via `x-anthropic-key` header)
+- Never sent to the browser directly — all AI calls proxied through `/api/chat`
 
 ---
 
@@ -86,16 +90,45 @@ python3 app.py
 
 ---
 
-## Auth
+## Dashboard Features
 
-- Sessions via HMAC-signed cookies (worker.py) or Flask `session` (app.py)
-- Users defined in `USERS` dict — no database
-- Default: `admin` / `password123`, `demo` / `demo123`
+- **100 vendors** across 3 types: **AV** (35), **Catering** (35), **Venue** (30)
+- **Real dataset**: `event_vendors_dataset_1.xlsx` — prices are real midpoints from dataset (`min_price`/`max_price`)
+- **Price filter slider**: $1,000–$11,000 (real data range)
+- **AI chat** — Anthropic claude-sonnet-4 with built-in `web_search_20250305` tool (agentic loop)
+- **Anthropic API Key input** in chat panel — saves to localStorage, falls back to Cloudflare secret
+- **Chat panel** has dark event venue background image
+- **Header stats**: "Top Vendors", "24/7 Availability", "Top Rated" (static labels)
+- **Vendor modal** includes:
+  - Contact info (name, email, phone) from dataset
+  - Short description, highlighted pros, limitations
+  - Guest range, lead time, neighborhood, indoor/outdoor
+  - **Send Booking Inquiry** — mailto: button with pre-filled professional email
+  - **Book Now** — Google search redirect
+  - **Visit Website** — Google search redirect
+- **Per-type pricing display:**
+  - Catering → `$X–$Y/pp` (real per-person range from dataset)
+  - AV → `$X/hr` (midpoint ÷ 8hr day)
+  - Venue → total midpoint price
+- **`templates/dashboard.html`** kept in sync with `public/dashboard.html`
 
-## API Key
+---
 
-- Stored in `.env` locally, as a Cloudflare secret in production
-- Never sent to the browser — all Anthropic calls go through `/api/chat`
+## GitHub
+
+- Repo: https://github.com/Dreddy990111/bia-810-project
+- Branch: `main`
+- Latest commit: `cf2323e` — Integrate real vendor dataset — clean data, real prices, rich modal details
+
+---
+
+## Running Locally (Flask)
+
+```bash
+cd "/Users/dreddy/Desktop/BIA 810 project"
+python3 app.py
+# Opens at http://127.0.0.1:5000
+```
 
 ---
 

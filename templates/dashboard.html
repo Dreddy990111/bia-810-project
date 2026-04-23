@@ -1318,7 +1318,7 @@ function sendInquiryEmail(){
   const subject=inqCurrentDraft?.subject||'';
   const body=inqCurrentDraft?.body||'';
   const to=inqVendor.contact_email;
-  const mailtoLink=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const mailtoLink=`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   window.open(mailtoLink,'_blank');
   document.getElementById('inq-success-msg').innerHTML=
     `Your email client has opened addressed to <strong style="color:var(--gold-light)">${to}</strong>.<br>Review and hit send — expect a reply within ${inqVendor.response_time_hours} hours.`;

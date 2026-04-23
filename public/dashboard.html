@@ -1031,13 +1031,12 @@ function barHTML(label,pct){
 function closeModal(){document.getElementById('overlay').classList.remove('show');}
 
 /* ─── CHAT ─── */
-// Build a lean, query-aware system prompt — only top 20 relevant vendors sent per call
 function buildSystem(query){
   const q=(query||'').toLowerCase();
   let pool=[...VD];
 
   // Type hint detection
-  const typeMap={'catering':'Catering','venue':'Venue','audio visual':'AV',' av ':'AV','sound':'AV','decor':'Decor','floral':'Decor','flower':'Decor','lighting':'Decor','entertainment':'Entertainment','dj':'Entertainment','music':'Entertainment','band':'Entertainment'};
+  const typeMap={'catering':'Catering','venue':'Venue','audio visual':'AV',' av ':'AV','sound':'AV','lighting':'AV','dj':'AV','music':'AV'};
   let typeHint=null;
   for(const[k,v] of Object.entries(typeMap)){if(q.includes(k)){typeHint=v;break;}}
   if(typeHint) pool=pool.filter(v=>v.vendor_type===typeHint);
@@ -1058,26 +1057,31 @@ function buildSystem(query){
 
   if(pool.length===0) pool=[...VD];
 
-  // Score and take top 20
-  const top=pool.map(v=>({...v,_s:score(v)})).sort((a,b)=>b._s-a._s).slice(0,20);
+  // Score and take top 25 relevant vendors
+  const top=pool.map(v=>({...v,_s:score(v)})).sort((a,b)=>b._s-a._s).slice(0,25);
 
-  // Compact one-line format per vendor — far fewer tokens than JSON
-  const rows=top.map(v=>`${v.vendor_id}|${v.vendor_name}|${v.vendor_type}|${v.location_city}|$${v.price_range}|${v.rating}★|${v.experience_years}yr|${Math.round(v.reliability_score*100)}%|${v.availability?'avail':'booked'}|${v.event_types_supported}|score:${v._s}`).join('\n');
+  // Compact one-line format per vendor
+  const rows=top.map(v=>`${v.vendor_id}|${v.vendor_name}|${v.vendor_type}|${v.location_city}|${v.neighborhood}|$${v.price_range}|${v.rating}★|${v.experience_years}yr|${Math.round(v.reliability_score*100)}%|${v.availability?'Available':'Booked'}|${v.event_types_supported}|${v.indoor_outdoor}|guests:${v.min_guests}-${v.max_guests}|score:${v._s}`).join('\n');
 
-  return `You are a refined AI vendor assistant for Atelier, an event production platform.
+  return `You are a knowledgeable vendor assistant for Atelier, a vendor intelligence platform for events in the New York metro area.
 
-LOCAL VENDORS (top ${top.length} relevant, full DB has 100):
+You have access to our curated vendor database of ${VD.length} vendors. ONLY recommend vendors from this dataset — do not suggest or mention vendors outside of it.
+
+VENDOR DATABASE (top ${top.length} relevant vendors for this query):
 ${rows}
-Format: id|name|type|city|price|rating|exp|reliability|avail|event|score
+Format: id|name|type|city|neighborhood|price|rating|experience|reliability|availability|event_type|indoor_outdoor|guest_range|score
 
 SCORING: rating 30% + reliability 20% + experience 20% + cost_efficiency 20% + availability 10%
 
-RULES:
-- Local recommendations: emit [V:id|name|type|price|rating|score] for each, plus [F:type=X],[F:event=X],[F:maxprice=X] as needed.
-- Web search (different city, "find online", "search for"): use web_search tool.
-- Web results: plain text only, no [V:...] tokens.
-- Recommend top 3-5 with brief reasons. Be concise and professional.
-- BOOKING: When a user wants to book or reserve a vendor, tell them to click the vendor card to open its detail panel, then click the gold "Book Now" button which will take them directly to the vendor's booking page. You can also provide a direct Google search link like: https://www.google.com/search?q=VENDOR+NAME+CITY+booking+reservation`;}
+GUIDELINES:
+- Only recommend vendors from the dataset above. Never suggest outside vendors or services.
+- If no vendors match the query, say so honestly and suggest the user adjust their filters.
+- Recommend top 3-5 vendors with brief, clear reasons for each.
+- Emit [V:id|name|type|price|rating|score] tokens for each recommended vendor so they appear as clickable cards.
+- Emit [F:type=X], [F:event=X], [F:maxprice=X] tokens to update dashboard filters when relevant.
+- For budget queries, highlight vendors that offer the best value within the budget.
+- For booking, tell users to click the vendor card and use the "Book Now" or "Send Booking Inquiry" button.
+- Be concise, warm, and professional. Do not make up pricing or details not in the data.`;}
 
 function addBot(html){
   const m=document.getElementById('chat-msgs');
@@ -1168,7 +1172,6 @@ async function callAPI(messages, systemPrompt){
       model:'claude-sonnet-4-20250514',
       max_tokens:1024,
       system:systemPrompt,
-      tools:[{type:'web_search_20250305',name:'web_search'}],
       messages
     })
   });

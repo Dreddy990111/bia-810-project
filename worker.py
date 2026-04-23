@@ -201,12 +201,22 @@ async def handle_send_email(request, env):
         if not resend_key:
             return json_resp({"error": "Email service not configured — add RESEND_API_KEY as a Worker secret."}, 503)
 
+        email_body = (body.get("body") or "").strip()
+        if not email_body:
+            return json_resp({"error": "Email body is empty — please go back and regenerate the draft."}, 400)
+
+        html_body = "<br>".join(
+            f"<p>{line}</p>" if line.strip() else "<br>"
+            for line in email_body.split("\n")
+        )
+
         payload = {
             "from": "Atelier Inquiry <onboarding@resend.dev>",
             "to": [body.get("to", "")],
             "reply_to": body.get("from_email", ""),
-            "subject": body.get("subject", "Vendor Inquiry"),
-            "text": body.get("body", ""),
+            "subject": body.get("subject") or "Vendor Inquiry",
+            "html": html_body,
+            "text": email_body,
         }
 
         init = to_js({

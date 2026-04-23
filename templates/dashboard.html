@@ -1307,6 +1307,7 @@ async function submitInquiryForm(){
 }
 
 async function sendInquiryEmail(){
+  if(!inqCurrentDraft?.body?.trim()){alert('Email body is empty — please go back and regenerate the draft.');return;}
   const btn=document.getElementById('inq-send-btn');
   btn.disabled=true;btn.innerHTML='<span class="inq-spinner"></span>Sending…';
   try{

@@ -749,8 +749,9 @@ main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
       </div>
 
       <!-- Step 2: AI Draft review -->
+      <!-- Step 2: Draft preview -->
       <div class="inq-step" id="inq-step-2">
-        <div class="inq-section-label">AI-drafted email</div>
+        <div class="inq-section-label">Review your inquiry email</div>
         <div class="email-preview">
           <div class="email-meta-row">
             <span class="email-meta-label">From</span>
@@ -766,27 +767,20 @@ main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
           </div>
           <div class="email-body-preview" id="inq-draft-body-display"></div>
         </div>
-        <div class="inq-group">
-          <label class="inq-label">Want changes? Describe them and redraft</label>
-          <div style="display:flex;gap:7px;">
-            <input class="inq-input" id="inq-change-req" placeholder="e.g. More formal tone, mention outdoor setup, make it shorter…" style="flex:1;" />
-            <button class="inq-btn-secondary" id="inq-redraft-btn" onclick="requestRedraft()" style="white-space:nowrap;flex-shrink:0;">Redraft</button>
-          </div>
-        </div>
         <div class="inq-actions">
           <button class="inq-btn-secondary" onclick="gotoInqStep(1)">← Back</button>
           <button class="inq-btn-primary" id="inq-send-btn" onclick="sendInquiryEmail()">
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l7 5 7-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Approve &amp; Send
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l7 5 7-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Confirm &amp; Send
           </button>
         </div>
       </div>
 
-      <!-- Step 3: Success -->
+      <!-- Step 3: Sent confirmation -->
       <div class="inq-step" id="inq-step-3">
         <div class="inq-success">
           <div class="inq-success-icon">✦</div>
-          <div class="inq-success-title">Inquiry Sent</div>
-          <div class="inq-success-sub" id="inq-success-msg">Your email has been delivered to the vendor.</div>
+          <div class="inq-success-title">Email Sent</div>
+          <div class="inq-success-sub" id="inq-success-msg">Your inquiry has been delivered.</div>
         </div>
         <div class="inq-actions" style="justify-content:center;">
           <button class="inq-btn-primary" style="flex:0;padding:10px 32px;" onclick="closeInquiry()">Done</button>
@@ -1280,11 +1274,10 @@ function showDraft(subject, body){
   inqCurrentDraft={subject,body};
   document.getElementById('inq-draft-subject').textContent=subject;
   document.getElementById('inq-draft-body-display').textContent=body;
-  document.getElementById('inq-change-req').value='';
 }
 
-async function callDraftAPI(payload, btn, loadingLabel){
-  btn.disabled=true;btn.innerHTML='<span class="inq-spinner"></span>'+loadingLabel;
+async function callDraftAPI(payload, btn){
+  btn.disabled=true;btn.innerHTML='<span class="inq-spinner"></span>Drafting…';
   const apiKey=getApiKey();
   const headers={'Content-Type':'application/json'};
   if(apiKey)headers['x-anthropic-key']=apiKey;
@@ -1295,9 +1288,7 @@ async function callDraftAPI(payload, btn, loadingLabel){
     return d;
   }finally{
     btn.disabled=false;
-    btn.innerHTML=btn.id==='inq-draft-btn'
-      ?'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M8 2l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 11l-3.7 2.5 1.4-4.3L2 6.5h4.5z" fill="currentColor"/></svg>Draft with AI'
-      :'Redraft';
+    btn.innerHTML='<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M8 2l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 11l-3.7 2.5 1.4-4.3L2 6.5h4.5z" fill="currentColor"/></svg>Draft with AI';
   }
 }
 
@@ -1307,27 +1298,12 @@ async function submitInquiryForm(){
   inqUserData=ud;
   const btn=document.getElementById('inq-draft-btn');
   try{
-    const d=await callDraftAPI({vendor:inqVendor,user_details:ud},btn,'Drafting…');
+    const d=await callDraftAPI({vendor:inqVendor,user_details:ud},btn);
     document.getElementById('inq-from-display').textContent=`${ud.name} <${ud.email}>`;
     document.getElementById('inq-to-display').textContent=`${inqVendor.contact_name} <${inqVendor.contact_email}>`;
     showDraft(d.subject,d.body);
     gotoInqStep(2);
   }catch(e){alert('Could not draft email: '+e.message);}
-}
-
-async function requestRedraft(){
-  const changeReq=document.getElementById('inq-change-req').value.trim();
-  if(!changeReq){alert('Please describe what you want changed.');return;}
-  const btn=document.getElementById('inq-redraft-btn');
-  try{
-    const d=await callDraftAPI({
-      vendor:inqVendor,
-      user_details:inqUserData,
-      change_request:changeReq,
-      current_draft:inqCurrentDraft,
-    },btn,'Redrafting…');
-    showDraft(d.subject,d.body);
-  }catch(e){alert('Could not redraft: '+e.message);}
 }
 
 async function sendInquiryEmail(){
@@ -1348,10 +1324,10 @@ async function sendInquiryEmail(){
     const d=await r.json();
     if(!r.ok)throw new Error(d.error||'Send failed');
     document.getElementById('inq-success-msg').innerHTML=
-      `Your inquiry was sent to <strong style="color:var(--gold-light)">${inqVendor.contact_email}</strong>.<br>Expect a reply within ${inqVendor.response_time_hours} hours.`;
+      `Sent to <strong style="color:var(--gold-light)">${inqVendor.contact_email}</strong>.<br>You should receive it in your inbox now. Expect a reply within ${inqVendor.response_time_hours} hours.`;
     gotoInqStep(3);
   }catch(e){alert('Could not send email: '+e.message);}
-  finally{btn.disabled=false;btn.innerHTML='<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l7 5 7-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Approve &amp; Send';}
+  finally{btn.disabled=false;btn.innerHTML='<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l7 5 7-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Confirm &amp; Send';}
 }
 
 /* ─── CHAT ─── */

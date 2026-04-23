@@ -465,6 +465,47 @@ main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 /* STAGGER ANIMATION */
 .vcard{animation:fadeUp 0.3s ease both;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── INQUIRY MODAL ── */
+.inq-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.78);display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px);}
+.inq-overlay.show{display:flex;}
+.inq-modal{background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r2);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;animation:modalIn 0.22s ease;scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
+.inq-modal::-webkit-scrollbar{width:3px;}
+.inq-modal::-webkit-scrollbar-thumb{background:var(--line2);}
+.inq-head{padding:20px 24px 14px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;position:sticky;top:0;background:var(--ink2);z-index:1;}
+.inq-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;color:var(--paper);}
+.inq-subtitle{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-dim);margin-top:3px;}
+.inq-body{padding:20px 24px 24px;}
+.inq-step{display:none;}
+.inq-step.active{display:block;}
+.step-dots{display:flex;gap:6px;margin-bottom:20px;}
+.step-dot{width:6px;height:6px;border-radius:50%;background:var(--ink3);border:1px solid var(--line2);transition:all 0.2s;}
+.step-dot.on{background:var(--gold);border-color:var(--gold);}
+.step-dot.done{background:var(--gold-dim);border-color:var(--gold-dim);}
+.inq-group{margin-bottom:13px;}
+.inq-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.inq-label{font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--mist3);margin-bottom:5px;display:block;}
+.inq-input,.inq-select,.inq-textarea{width:100%;padding:8px 11px;border:1px solid var(--line);border-radius:var(--r);background:rgba(255,255,255,0.04);color:var(--paper);font-family:'DM Sans',sans-serif;font-size:12px;outline:none;transition:border-color 0.18s;}
+.inq-input::placeholder,.inq-textarea::placeholder{color:var(--mist3);}
+.inq-input:focus,.inq-select:focus,.inq-textarea:focus{border-color:var(--gold-dim);}
+.inq-select{color:var(--paper2);}
+.inq-select option{background:var(--ink2);}
+.inq-textarea{resize:vertical;min-height:260px;line-height:1.65;font-size:12px;}
+.inq-divider{height:1px;background:var(--line);margin:16px 0;}
+.inq-section-label{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:12px;}
+.draft-subject{padding:9px 12px;border:1px solid var(--line);border-radius:var(--r);background:rgba(255,255,255,0.04);font-size:12px;color:var(--paper2);margin-bottom:10px;}
+.draft-subject strong{color:var(--mist3);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;font-weight:400;display:block;margin-bottom:3px;}
+.inq-actions{display:flex;gap:8px;margin-top:18px;}
+.inq-btn-primary{flex:1;padding:10px 16px;border-radius:var(--r);background:linear-gradient(135deg,var(--gold-dim),var(--gold));color:var(--ink);font-weight:500;font-size:12px;letter-spacing:0.08em;border:none;font-family:'DM Sans',sans-serif;transition:opacity 0.18s;}
+.inq-btn-primary:hover{opacity:0.88;}
+.inq-btn-primary:disabled{opacity:0.35;}
+.inq-btn-secondary{padding:10px 16px;border-radius:var(--r);border:1px solid var(--line2);color:var(--mist2);background:transparent;font-size:12px;letter-spacing:0.08em;font-family:'DM Sans',sans-serif;transition:all 0.18s;}
+.inq-btn-secondary:hover{border-color:var(--gold-dim);color:var(--gold-light);}
+.inq-spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(14,14,14,0.25);border-top-color:var(--ink);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:5px;}
+.inq-success{text-align:center;padding:32px 16px;}
+.inq-success-icon{font-size:34px;margin-bottom:14px;line-height:1;color:var(--gold);}
+.inq-success-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--paper);margin-bottom:8px;}
+.inq-success-sub{font-size:12px;color:var(--mist3);line-height:1.7;}
 </style>
 </head>
 <body>
@@ -648,6 +689,91 @@ main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body" id="m-body"></div>
+  </div>
+</div>
+
+<!-- Inquiry Agent Modal -->
+<div class="inq-overlay" id="inq-overlay" onclick="if(event.target===this)closeInquiry()">
+  <div class="inq-modal">
+    <div class="inq-head">
+      <div>
+        <div class="inq-title" id="inq-vendor-name">Send Inquiry</div>
+        <div class="inq-subtitle" id="inq-vendor-type">Pricing &amp; Availability Request</div>
+      </div>
+      <button class="modal-close" onclick="closeInquiry()">×</button>
+    </div>
+    <div class="inq-body">
+      <div class="step-dots">
+        <div class="step-dot on" id="sdot-1"></div>
+        <div class="step-dot" id="sdot-2"></div>
+        <div class="step-dot" id="sdot-3"></div>
+      </div>
+
+      <!-- Step 1: Details form -->
+      <div class="inq-step active" id="inq-step-1">
+        <div class="inq-section-label">Your details</div>
+        <div class="inq-row">
+          <div class="inq-group">
+            <label class="inq-label">Your Name *</label>
+            <input class="inq-input" id="inq-name" placeholder="Full name" />
+          </div>
+          <div class="inq-group">
+            <label class="inq-label">Your Email *</label>
+            <input class="inq-input" id="inq-email" type="email" placeholder="you@email.com" />
+          </div>
+        </div>
+        <div class="inq-row">
+          <div class="inq-group">
+            <label class="inq-label">Event Date *</label>
+            <input class="inq-input" id="inq-date" type="date" />
+          </div>
+          <div class="inq-group">
+            <label class="inq-label">Approximate Budget</label>
+            <input class="inq-input" id="inq-budget" placeholder="e.g. $5,000" />
+          </div>
+        </div>
+        <div class="inq-divider"></div>
+        <div class="inq-section-label" id="inq-type-label">Event details</div>
+        <div id="inq-dynamic-fields"></div>
+        <div class="inq-actions">
+          <button class="inq-btn-secondary" onclick="closeInquiry()">Cancel</button>
+          <button class="inq-btn-primary" id="inq-draft-btn" onclick="submitInquiryForm()">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M8 2l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 11l-3.7 2.5 1.4-4.3L2 6.5h4.5z" fill="currentColor"/></svg>Draft with AI
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: AI Draft review -->
+      <div class="inq-step" id="inq-step-2">
+        <div class="inq-section-label">AI-drafted email — review &amp; edit before sending</div>
+        <div class="draft-subject">
+          <strong>Subject</strong>
+          <span id="inq-draft-subject"></span>
+        </div>
+        <textarea class="inq-textarea" id="inq-draft-body"></textarea>
+        <div style="font-size:10px;color:var(--mist3);margin-top:7px;letter-spacing:0.04em;">
+          Sending to: <span id="inq-to-email" style="color:var(--gold-light);"></span>
+        </div>
+        <div class="inq-actions">
+          <button class="inq-btn-secondary" onclick="gotoInqStep(1)">← Back</button>
+          <button class="inq-btn-primary" id="inq-send-btn" onclick="sendInquiryEmail()">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l7 5 7-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Send Email
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Success -->
+      <div class="inq-step" id="inq-step-3">
+        <div class="inq-success">
+          <div class="inq-success-icon">✦</div>
+          <div class="inq-success-title">Inquiry Sent</div>
+          <div class="inq-success-sub" id="inq-success-msg">Your email has been delivered to the vendor.</div>
+        </div>
+        <div class="inq-actions" style="justify-content:center;">
+          <button class="inq-btn-primary" style="flex:0;padding:10px 32px;" onclick="closeInquiry()">Done</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -995,14 +1121,14 @@ function openModal(id){
 
     <!-- Action Buttons -->
     <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
-      <a href="mailto:${v.contact_email}?subject=${encodeURIComponent('Booking Inquiry — '+v.vendor_name)}&body=${encodeURIComponent('Dear '+v.contact_name+',\n\nI am reaching out to inquire about booking your services through the Atelier Vendor Intelligence Platform.\n\nVendor: '+v.vendor_name+'\nType: '+v.vendor_type+'\nLocation: '+v.location_city+'\nEvent Type: '+v.event_types_supported+'\n\nI would love to discuss availability, pricing, and how we can work together for an upcoming event.\n\nPlease let me know your available dates and any packages you offer.\n\nBest regards,')}"
-        style="display:flex;align-items:center;justify-content:center;gap:8px;
+      <button onclick="openInquiry('${v.vendor_id}')"
+        style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
                background:linear-gradient(135deg,var(--gold-dim),var(--gold));
                color:var(--ink);font-weight:500;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;
-               padding:11px 16px;border-radius:6px;text-decoration:none;transition:opacity 0.18s;">
+               padding:11px 16px;border-radius:6px;border:none;font-family:'DM Sans',sans-serif;transition:opacity 0.18s;">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l7 5 7-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-        Send Booking Inquiry
-      </a>
+        AI Draft Inquiry
+      </button>
       <div style="display:flex;gap:8px;">
         <a href="https://www.google.com/search?q=${encodeURIComponent(v.vendor_name+' '+v.location_city+' booking')}" target="_blank" rel="noopener"
           style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
@@ -1029,6 +1155,152 @@ function barHTML(label,pct){
   </div>`;
 }
 function closeModal(){document.getElementById('overlay').classList.remove('show');}
+
+/* ─── INQUIRY AGENT ─── */
+let inqVendor=null;
+
+const INQ_FIELDS={
+  AV:[
+    {id:'inq-event-type',label:'Event Type',type:'select',opts:['Corporate','Wedding','Party','Other']},
+    {id:'inq-venue',label:'Venue Name / Location',type:'text',ph:'e.g. Grand Hyatt, New York'},
+    {id:'inq-attendees',label:'Expected Attendees',type:'text',ph:'e.g. 150'},
+    {id:'inq-equipment',label:'Equipment Needed',type:'text',ph:'e.g. sound system, lighting, microphones, projection'},
+    {id:'inq-duration',label:'Event Duration',type:'text',ph:'e.g. 4 hours'},
+    {id:'inq-setup',label:'Setup Time Required',type:'text',ph:'e.g. 2 hours before event'},
+    {id:'inq-notes',label:'Additional Notes',type:'textarea',ph:'Technical requirements, theme, stage layout…'},
+  ],
+  Catering:[
+    {id:'inq-event-type',label:'Event Type',type:'select',opts:['Corporate','Wedding','Party','Other']},
+    {id:'inq-guests',label:'Number of Guests *',type:'text',ph:'e.g. 120'},
+    {id:'inq-meal-type',label:'Meal Type',type:'select',opts:['Breakfast','Lunch','Dinner','Cocktail Reception','Full Reception']},
+    {id:'inq-service-style',label:'Service Style',type:'select',opts:['Buffet','Plated','Family Style','Stations','Cocktail Style']},
+    {id:'inq-dietary',label:'Dietary Requirements',type:'text',ph:'e.g. Vegan, Gluten-free, Halal, Kosher'},
+    {id:'inq-cuisine',label:'Cuisine Preferences',type:'text',ph:'e.g. Italian, Mediterranean, Asian Fusion'},
+    {id:'inq-notes',label:'Additional Notes',type:'textarea',ph:'Allergies, theme, service timing details…'},
+  ],
+  Venue:[
+    {id:'inq-event-type',label:'Event Type',type:'select',opts:['Corporate','Wedding','Party','Other']},
+    {id:'inq-guests',label:'Expected Guests *',type:'text',ph:'e.g. 200'},
+    {id:'inq-duration',label:'Event Duration (hours)',type:'text',ph:'e.g. 6 hours'},
+    {id:'inq-io',label:'Indoor / Outdoor Preference',type:'select',opts:['Indoor','Outdoor','Both / Flexible']},
+    {id:'inq-setup-date',label:'Setup Date (if different)',type:'date'},
+    {id:'inq-requirements',label:'Specific Requirements',type:'text',ph:'e.g. parking, in-house catering, AV, bridal suite'},
+    {id:'inq-notes',label:'Additional Notes',type:'textarea',ph:'Theme, layout, exclusive use requirements…'},
+  ],
+  Decor:[
+    {id:'inq-event-type',label:'Event Type',type:'select',opts:['Corporate','Wedding','Party','Other']},
+    {id:'inq-theme',label:'Theme / Style',type:'text',ph:'e.g. Garden Romantic, Modern Minimalist'},
+    {id:'inq-palette',label:'Color Palette',type:'text',ph:'e.g. Ivory, Gold, Sage Green'},
+    {id:'inq-guests',label:'Expected Guests',type:'text',ph:'e.g. 150'},
+    {id:'inq-tables',label:'Tables / Areas to Decorate',type:'text',ph:'e.g. 15 tables, ceremony arch, cocktail area'},
+    {id:'inq-elements',label:'Decor Elements Needed',type:'text',ph:'e.g. florals, draping, lighting, centerpieces'},
+    {id:'inq-notes',label:'Additional Notes',type:'textarea',ph:'Venue details, inspiration board, must-haves…'},
+  ],
+  Entertainment:[
+    {id:'inq-event-type',label:'Event Type',type:'select',opts:['Corporate','Wedding','Party','Other']},
+    {id:'inq-audience',label:'Expected Audience Size',type:'text',ph:'e.g. 200'},
+    {id:'inq-perf-duration',label:'Performance Duration',type:'text',ph:'e.g. 2 hours with breaks'},
+    {id:'inq-style',label:'Performance Style / Genre',type:'text',ph:'e.g. Jazz quartet, DJ, Live Band, Stand-up'},
+    {id:'inq-venue-type',label:'Venue Type',type:'text',ph:'e.g. Ballroom, Rooftop, Outdoor Garden'},
+    {id:'inq-notes',label:'Additional Notes',type:'textarea',ph:'Sound system available on-site, song requests, ambiance…'},
+  ],
+};
+
+function buildDynFields(vtype){
+  const fields=INQ_FIELDS[vtype]||INQ_FIELDS.AV;
+  return fields.map(f=>{
+    if(f.type==='select')
+      return `<div class="inq-group"><label class="inq-label">${f.label}</label><select class="inq-select" id="${f.id}"><option value="">Select…</option>${f.opts.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`;
+    if(f.type==='textarea')
+      return `<div class="inq-group"><label class="inq-label">${f.label}</label><textarea class="inq-input" id="${f.id}" placeholder="${f.ph||''}" rows="3" style="min-height:0;resize:vertical;"></textarea></div>`;
+    return `<div class="inq-group"><label class="inq-label">${f.label}</label><input class="inq-input" id="${f.id}" type="${f.type||'text'}" placeholder="${f.ph||''}" /></div>`;
+  }).join('');
+}
+
+function openInquiry(id){
+  inqVendor=VD.find(v=>v.vendor_id===id);if(!inqVendor)return;
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('inq-vendor-name').textContent=inqVendor.vendor_name;
+  document.getElementById('inq-vendor-type').textContent=inqVendor.vendor_type+' — Pricing & Availability Request';
+  document.getElementById('inq-type-label').textContent=inqVendor.vendor_type+' details';
+  document.getElementById('inq-dynamic-fields').innerHTML=buildDynFields(inqVendor.vendor_type);
+  document.getElementById('inq-name').value='';
+  document.getElementById('inq-email').value='';
+  document.getElementById('inq-date').value='';
+  document.getElementById('inq-budget').value='';
+  gotoInqStep(1);
+  document.getElementById('inq-overlay').classList.add('show');
+}
+
+function closeInquiry(){document.getElementById('inq-overlay').classList.remove('show');inqVendor=null;}
+
+function gotoInqStep(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('inq-step-'+i).classList.toggle('active',i===n);
+    const d=document.getElementById('sdot-'+i);
+    d.classList.remove('on','done');
+    if(i<n)d.classList.add('done');
+    else if(i===n)d.classList.add('on');
+  });
+}
+
+function collectInqData(){
+  const fields=INQ_FIELDS[inqVendor?.vendor_type]||[];
+  const extra={};
+  fields.forEach(f=>{const el=document.getElementById(f.id);if(el&&el.value.trim())extra[f.label]=el.value.trim();});
+  return {
+    name:document.getElementById('inq-name').value.trim(),
+    email:document.getElementById('inq-email').value.trim(),
+    date:document.getElementById('inq-date').value,
+    budget:document.getElementById('inq-budget').value.trim(),
+    ...extra,
+  };
+}
+
+async function submitInquiryForm(){
+  const ud=collectInqData();
+  if(!ud.name||!ud.email||!ud.date){alert('Please fill in your name, email, and event date.');return;}
+  const btn=document.getElementById('inq-draft-btn');
+  btn.disabled=true;btn.innerHTML='<span class="inq-spinner"></span>Drafting…';
+  try{
+    const apiKey=getApiKey();
+    const headers={'Content-Type':'application/json'};
+    if(apiKey)headers['x-anthropic-key']=apiKey;
+    const r=await fetch('/api/draft-email',{method:'POST',headers,body:JSON.stringify({vendor:inqVendor,user_details:ud})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Draft failed');
+    document.getElementById('inq-draft-subject').textContent=d.subject;
+    document.getElementById('inq-draft-body').value=d.body;
+    document.getElementById('inq-to-email').textContent=inqVendor.contact_email;
+    gotoInqStep(2);
+  }catch(e){alert('Could not draft email: '+e.message);}
+  finally{btn.disabled=false;btn.innerHTML='<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M8 2l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 11l-3.7 2.5 1.4-4.3L2 6.5h4.5z" fill="currentColor"/></svg>Draft with AI';}
+}
+
+async function sendInquiryEmail(){
+  const btn=document.getElementById('inq-send-btn');
+  btn.disabled=true;btn.innerHTML='<span class="inq-spinner"></span>Sending…';
+  try{
+    const ud=collectInqData();
+    const r=await fetch('/api/send-email',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        to:inqVendor.contact_email,
+        from_name:ud.name||'Atelier User',
+        from_email:ud.email||'',
+        subject:document.getElementById('inq-draft-subject').textContent,
+        body:document.getElementById('inq-draft-body').value,
+      }),
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Send failed');
+    document.getElementById('inq-success-msg').innerHTML=
+      `Your inquiry was sent to <strong style="color:var(--gold-light)">${inqVendor.contact_email}</strong>.<br>Expect a reply within ${inqVendor.response_time_hours} hours.`;
+    gotoInqStep(3);
+  }catch(e){alert('Could not send email: '+e.message);}
+  finally{btn.disabled=false;btn.innerHTML='<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:5px;"><path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l7 5 7-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Send Email';}
+}
 
 /* ─── CHAT ─── */
 function buildSystem(query){

@@ -1319,7 +1319,7 @@ function sendInquiryEmail(){
   const body=inqCurrentDraft?.body||'';
   const to=inqVendor.contact_email;
   const mailtoLink=`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  window.open(mailtoLink,'_blank');
+  window.location.href=mailtoLink;
   document.getElementById('inq-success-msg').innerHTML=
     `Your email client has opened addressed to <strong style="color:var(--gold-light)">${to}</strong>.<br>Review and hit send — expect a reply within ${inqVendor.response_time_hours} hours.`;
   gotoInqStep(3);

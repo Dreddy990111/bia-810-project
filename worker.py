@@ -116,54 +116,49 @@ async def handle_draft_email(request, env):
         change_request = body.get("change_request", "")
         current_draft = body.get("current_draft", {})
 
+        extra = {k.rstrip(' *'): v for k, v in ud.items() if k not in ("name", "email", "date", "budget") and v}
+        detail_lines = "\n".join(f"- {k}: {v}" for k, v in extra.items())
+
         if change_request and current_draft:
-            prompt = f"""Revise this vendor inquiry email based on the requested changes.
+            prompt = f"""Revise this vendor inquiry email. Output ONLY in the exact format below — no extra text, no markdown.
+
+SUBJECT: [revised subject line]
+
+BODY:
+[revised email body]
 
 Current draft:
-Subject: {current_draft.get('subject', '')}
+SUBJECT: {current_draft.get('subject', '')}
 
+BODY:
 {current_draft.get('body', '')}
 
 Changes requested: {change_request}
-
-Apply the requested changes while keeping the email professional and appropriate for a {vtype} inquiry addressed to {contact} at {vname}. Keep it ~150–200 words.
-
-Respond ONLY with a JSON object (no markdown, no code fences):
-{{"subject": "...", "body": "..."}}"""
+Keep it professional, ~150–200 words, addressed to {contact} at {vname}."""
         else:
-            extra = {k.rstrip(' *'): v for k, v in ud.items() if k not in ("name", "email", "date", "budget") and v}
-            detail_lines = "\n".join(f"  • {k}: {v}" for k, v in extra.items())
-            if not detail_lines:
-                detail_lines = "  (no additional details provided)"
+            prompt = f"""Write a professional vendor inquiry email. Output ONLY in the exact format below — no extra text, no markdown, no JSON.
 
-            prompt = f"""Draft a professional inquiry email from an event planner to a {vtype} vendor.
+SUBJECT: [email subject line]
 
-=== SENDER ===
-Name: {ud.get('name', '[Name]')}
-Email: {ud.get('email', '')}
+BODY:
+[full email body — 180 to 220 words]
 
-=== VENDOR ===
-Name: {vname}
-Contact: {contact}
-Type: {vtype}
-City: {city}
-
-=== EVENT DETAILS (MUST all appear in the email body) ===
-  • Event date: {ud.get('date', 'TBD')}
-  • Budget: {ud.get('budget', 'Flexible')}
+Use these details:
+Sender name: {ud.get('name', '[Name]')}
+Event date: {ud.get('date', 'TBD')}
+Budget: {ud.get('budget', 'Flexible')}
+Vendor: {vname} ({vtype}, {city})
+Contact person: {contact}
 {detail_lines}
 
-=== INSTRUCTIONS ===
-Write the email body addressed to {contact}. The body MUST naturally include every detail listed under EVENT DETAILS above — do not skip any. Structure it as:
-1. Brief intro: who {ud.get('name','I')} am and the event
-2. The specifics: weave in ALL the event details (date, guest count, equipment, style, dietary needs, etc. — whatever is listed above)
-3. What you're requesting: availability confirmation + pricing/packages for {vtype} services
-4. Clear next step / call to action
-
-Tone: professional yet warm. Length: 180–220 words. Do NOT include email headers (From/To/Subject) in the body.
-
-Return ONLY a JSON object — no markdown, no code fences:
-{{"subject": "...", "body": "..."}}"""""
+The body must:
+- Open with "Dear {contact},"
+- Introduce {ud.get('name','the sender')} and the event
+- Mention every detail listed above naturally in the text
+- Ask about availability on the event date
+- Ask for pricing and package details for {vtype} services
+- Close with a clear call to action and "{ud.get('name','[Name]')}" as the sign-off name
+- NOT include From/To/Subject headers"""
 
         init = to_js({
             "method": "POST",
@@ -174,43 +169,36 @@ Return ONLY a JSON object — no markdown, no code fences:
             },
             "body": json.dumps({
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 800,
+                "max_tokens": 900,
                 "messages": [{"role": "user", "content": prompt}],
             }),
         }, dict_converter=Object.fromEntries)
 
         resp = await fetch("https://api.anthropic.com/v1/messages", init)
         data = json.loads(await resp.text())
-        raw = (data.get("content") or [{}])[0].get("text", "")
+        raw = (data.get("content") or [{}])[0].get("text", "").strip()
 
-        # Strip markdown code fences Claude sometimes adds
-        clean = re.sub(r'^```(?:json)?\s*', '', raw.strip())
-        clean = re.sub(r'\s*```$', '', clean).strip()
+        # Parse SUBJECT: and BODY: delimiters
+        subject = f"Booking Inquiry — {vname}"
+        body = ""
 
-        result = None
-        # Try direct parse first
-        try:
-            result = json.loads(clean)
-        except Exception:
-            pass
+        subject_m = re.search(r'SUBJECT:\s*(.+)', raw)
+        if subject_m:
+            subject = subject_m.group(1).strip()
 
-        # Fallback: find the outermost {...} block
-        if not result:
-            m = re.search(r'\{[\s\S]*\}', clean)
-            if m:
-                try:
-                    result = json.loads(m.group())
-                except Exception:
-                    pass
+        body_m = re.search(r'BODY:\s*\n([\s\S]+)', raw)
+        if body_m:
+            body = body_m.group(1).strip()
 
-        # Ensure result has non-empty subject and body
-        if not isinstance(result, dict) or not (result.get("body") or "").strip():
-            result = {
-                "subject": result.get("subject", f"Booking Inquiry — {vname}") if isinstance(result, dict) else f"Booking Inquiry — {vname}",
-                "body": raw,
-            }
+        # Fallback: if no BODY: marker, use everything after the subject line
+        if not body:
+            body = re.sub(r'^SUBJECT:.*\n?', '', raw, count=1).strip()
 
-        return json_resp({"subject": result.get("subject", f"Booking Inquiry — {vname}"), "body": result.get("body", raw)})
+        # Last resort: use the full raw response
+        if not body:
+            body = raw
+
+        return json_resp({"subject": subject, "body": body})
     except Exception as e:
         return json_resp({"error": str(e)}, 500)
 

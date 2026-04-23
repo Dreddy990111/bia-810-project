@@ -131,36 +131,39 @@ Apply the requested changes while keeping the email professional and appropriate
 Respond ONLY with a JSON object (no markdown, no code fences):
 {{"subject": "...", "body": "..."}}"""
         else:
-            extra = {k: v for k, v in ud.items() if k not in ("name", "email", "date", "budget") and v}
-            extra_lines = "\n".join(f"- {k}: {v}" for k, v in extra.items())
+            extra = {k.rstrip(' *'): v for k, v in ud.items() if k not in ("name", "email", "date", "budget") and v}
+            detail_lines = "\n".join(f"  • {k}: {v}" for k, v in extra.items())
+            if not detail_lines:
+                detail_lines = "  (no additional details provided)"
 
-            type_context = {
-                "Catering": "catering services (menu, dietary options, service style, staffing)",
-                "Venue": "venue hire (capacity, layout options, included amenities, availability)",
-                "AV": "audio-visual services (equipment packages, setup requirements, on-site technician)",
-                "Decor": "decor and styling services (themes, floral, draping, setup/teardown)",
-                "Entertainment": "entertainment services (performance packages, technical rider, setlist flexibility)",
-            }.get(vtype, "services (pricing, packages, availability)")
+            prompt = f"""Draft a professional inquiry email from an event planner to a {vtype} vendor.
 
-            prompt = f"""You are drafting a professional vendor inquiry email on behalf of an event planner.
+=== SENDER ===
+Name: {ud.get('name', '[Name]')}
+Email: {ud.get('email', '')}
 
-Sender: {ud.get('name','[Name]')} <{ud.get('email','')}>
-Recipient: {contact} at {vname} ({vtype}, {city})
-Event date: {ud.get('date','TBD')}
-Budget: {ud.get('budget','Flexible')}
-{extra_lines}
+=== VENDOR ===
+Name: {vname}
+Contact: {contact}
+Type: {vtype}
+City: {city}
 
-Write a concise, warm, professional email inquiring about {type_context}. The email should:
-1. Introduce the sender and their event
-2. Ask specifically about availability for the event date
-3. Request pricing/package information relevant to the vendor type ({vtype})
-4. Mention any relevant details from the form above
-5. Close with a clear next step
+=== EVENT DETAILS (MUST all appear in the email body) ===
+  • Event date: {ud.get('date', 'TBD')}
+  • Budget: {ud.get('budget', 'Flexible')}
+{detail_lines}
 
-Keep it 150–200 words. Professional yet personable. Address {contact} directly.
+=== INSTRUCTIONS ===
+Write the email body addressed to {contact}. The body MUST naturally include every detail listed under EVENT DETAILS above — do not skip any. Structure it as:
+1. Brief intro: who {ud.get('name','I')} am and the event
+2. The specifics: weave in ALL the event details (date, guest count, equipment, style, dietary needs, etc. — whatever is listed above)
+3. What you're requesting: availability confirmation + pricing/packages for {vtype} services
+4. Clear next step / call to action
 
-Respond ONLY with a JSON object (no markdown, no code fences):
-{{"subject": "...", "body": "..."}}"""
+Tone: professional yet warm. Length: 180–220 words. Do NOT include email headers (From/To/Subject) in the body.
+
+Return ONLY a JSON object — no markdown, no code fences:
+{{"subject": "...", "body": "..."}}"""""
 
         init = to_js({
             "method": "POST",
@@ -171,7 +174,7 @@ Respond ONLY with a JSON object (no markdown, no code fences):
             },
             "body": json.dumps({
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 600,
+                "max_tokens": 800,
                 "messages": [{"role": "user", "content": prompt}],
             }),
         }, dict_converter=Object.fromEntries)

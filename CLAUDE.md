@@ -21,19 +21,24 @@ A vendor intelligence dashboard with login/session auth and an AI chat engine ba
 
 ```
 BIA 810 project/
-├── worker.py               # Cloudflare Worker — routes, auth, Anthropic proxy
-├── wrangler.toml           # Wrangler deployment config
+├── worker.py                   # Cloudflare Worker — routes, auth, Anthropic proxy
+├── wrangler.toml               # Wrangler deployment config
 ├── public/
-│   ├── login.html          # Login page (static, JS error handling)
-│   └── dashboard.html      # Main vendor intelligence dashboard
-├── app.py                  # Flask server (local dev / legacy)
-├── .env                    # API key (never commit)
+│   ├── login.html              # Login page (static, JS error handling)
+│   └── dashboard.html          # Main vendor intelligence dashboard (125 vendors, PRIMARY)
+├── app.py                      # Flask server (local dev / legacy)
+├── .env                        # API key (never commit)
 ├── .gitignore
 ├── requirements.txt
-├── templates/              # Flask templates (legacy, kept for local dev)
+├── README.md                   # Professor submission README (4 required sections)
+├── Presentation_Script.md      # 15-min script for 4 speakers (Jaanvi→Dhanvanth→Rohini→Lynn)
+├── Presentation_Script.pdf     # PDF version of presentation script (11,870 bytes)
+├── Atelier_Abstract.pdf        # One-page project abstract (4 team members)
+├── Atelier_Project_Report.pdf  # Full project report
+├── templates/                  # Flask templates (kept in sync with public/)
 │   ├── login.html
 │   └── dashboard.html
-└── vendoriq_elegant-4.html # Original standalone HTML (source of truth for UI)
+└── vendoriq_elegant-4.html     # Original standalone HTML (source of truth for UI)
 ```
 
 ---
@@ -92,10 +97,10 @@ npx wrangler dev --port 8787
 
 ## Dashboard Features
 
-- **100 vendors** across 3 types: **AV** (35), **Catering** (35), **Venue** (30)
+- **125 vendors** across 4 types: **AV** (35), **Catering** (35), **Venue** (30), **Party** (25)
 - **Real dataset**: `event_vendors_dataset_1.xlsx` — prices are real midpoints from dataset (`min_price`/`max_price`)
 - **Price filter slider**: $1,000–$11,000 (real data range)
-- **AI chat** — Anthropic claude-sonnet-4 with built-in `web_search_20250305` tool (agentic loop)
+- **AI chat** — Anthropic claude-sonnet-4, **dataset-only** (no web search tool); top 25 relevant vendors injected into system prompt per query
 - **Anthropic API Key input** in chat panel — saves to localStorage, falls back to Cloudflare secret
 - **Chat panel** has dark event venue background image
 - **Header stats**: "Top Vendors", "24/7 Availability", "Top Rated" (static labels)
@@ -118,7 +123,8 @@ npx wrangler dev --port 8787
 
 - Repo: https://github.com/Dreddy990111/bia-810-project
 - Branch: `main`
-- Latest commit: `cf2323e` — Integrate real vendor dataset — clean data, real prices, rich modal details
+- Latest commit: `390a4ce` — README + Presentation_Script.md added
+- Collaborator: Jaanvi Vemana (fork) — changes merged into `public/dashboard.html`
 
 ---
 

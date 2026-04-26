@@ -3,7 +3,7 @@
 A vendor intelligence web application built for BIA 810 (Developing Business Applications using GenAI). Atelier helps event planners discover, filter, compare, and book vendors across New York City using smart filtering, composite scoring, and an AI-powered chat assistant backed by Anthropic Claude.
 
 **Live application:** https://atelier.atelier-iq.workers.dev
-**Team:** Rohini Mallikarjunaiah, Jaanvi Vemana, Lynn Chirimumimba, Dhanvanth Reddy
+**Team:** Rohini Mallikarjunaiah, Jaanavi Vemana, Lyne Chirimumimba, Dhanvanth Reddy
 
 ---
 

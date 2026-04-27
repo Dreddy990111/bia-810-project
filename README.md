@@ -26,29 +26,30 @@ Atelier is a single-page vendor intelligence dashboard that solves a real busine
 ## 2. Structure of the Code
 
 ```
-BIA 810 project/
-├── worker.py               # Cloudflare Worker — all server-side logic
-│                           #   - Route handling (/, /login, /dashboard, /logout, /api/chat)
-│                           #   - HMAC session cookie auth
-│                           #   - Anthropic API proxy (/api/chat)
+bia-810-project/
+├── worker.py                    # Cloudflare Worker — routes, HMAC auth, Anthropic API proxy
+├── wrangler.toml                # Cloudflare Workers deployment config (account ID, routes)
+├── app.py                       # Flask server for local development (mirrors Worker routes)
+├── generate_report.py           # Report generation script
+├── requirements.txt             # Python dependencies (Flask, python-dotenv)
+├── render.yaml                  # Legacy Render.com deployment config
+├── vendoriq_elegant-4.html      # Original standalone HTML (source of truth for UI)
+├── .gitignore
 │
-├── wrangler.toml           # Cloudflare Workers deployment config (account ID, routes)
+├── public/                      # Static assets served by Cloudflare Workers
+│   ├── login.html               # Login page with credential form and JS error handling
+│   └── dashboard.html           # Main application — all UI, filtering, AI chat, vendor data
+│                                #   · 125 vendor records embedded as a JS array
+│                                #   · Filter/sort logic in vanilla JS
+│                                #   · Anthropic API key input (saves to localStorage)
+│                                #   · AI chat panel backed by Anthropic Claude
 │
-├── public/                 # Static assets served by Cloudflare Workers
-│   ├── login.html          # Login page with credential form and JS error handling
-│   └── dashboard.html      # Main application — all UI, filtering, AI chat, vendor data
-│                           #   - 125 vendor records embedded as a JS array
-│                           #   - Filter/sort logic in vanilla JS
-│                           #   - Anthropic API key input (saves to localStorage)
-│                           #   - AI chat panel with agentic web_search tool
+├── templates/                   # Flask template copies (kept in sync with public/)
+│   ├── login.html
+│   └── dashboard.html
 │
-├── app.py                  # Flask server for local development (mirrors Worker routes)
-├── requirements.txt        # Python dependencies (Flask, python-dotenv)
-├── .env                    # Local environment variables — NOT committed to git
-│
-└── templates/              # Flask template copies (kept in sync with public/)
-    ├── login.html
-    └── dashboard.html
+├── README.md                    # Project submission README
+└── CLAUDE.md                    # Codebase instructions for Claude Code
 ```
 
 **Key design decisions:**
